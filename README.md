@@ -39,13 +39,7 @@ chatlark serve echo
 chatlark serve webhook
 ```
 
-AI 对话命令保留为可选边界，避免 ChatLark 基础包依赖 ChatTool 形成循环：
-
-```bash
-pip install "chatlark[llm]"
-chatlark chat
-chatlark serve ai --system "你是工作助手"
-```
+模型调用相关命令暂不放入 ChatLark 的默认命令面；需要模型 backend 的 bot 编排会在后续单独设计，避免重新引入 ChatTool 或其他 LLM runtime 硬依赖。
 
 ## Python API
 

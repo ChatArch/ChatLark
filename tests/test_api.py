@@ -34,3 +34,14 @@ def test_chat_session_accepts_custom_factory():
     assert session.user_count() == 1
     session.clear("u1")
     assert not session.has_session("u1")
+
+
+def test_chat_session_without_factory_is_explicitly_deferred():
+    session = ChatSession()
+
+    try:
+        session.chat("u1", "hello")
+    except RuntimeError as exc:
+        assert "requires chat_factory" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("ChatSession without chat_factory should fail explicitly")

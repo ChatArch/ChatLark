@@ -12,7 +12,7 @@ _LAZY_ATTRS = {
 
 def __getattr__(name: str):
     if name == "__version__":
-        return "0.1.0"
+        return __version__
     target = _LAZY_ATTRS.get(name)
     if target is None:
         raise AttributeError(name)
@@ -22,7 +22,7 @@ def __getattr__(name: str):
     return value
 
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     "__version__",
