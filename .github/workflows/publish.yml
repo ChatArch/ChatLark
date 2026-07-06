@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -22,6 +26,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+      - name: Install build and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
       - name: Resolve package version
         id: meta
         run: |
@@ -53,8 +61,21 @@ jobs:
             echo "Tag ${GITHUB_REF_NAME} does not match package version ${RELEASE_TAG}."
             exit 1
           fi
-      - name: Check PyPI version
-        id: pypi
+      - name: Check tagged commit is on main
+        if: github.event_name == 'push'
+        run: |
+          if ! git branch -r --contains "${GITHUB_SHA}" | grep -q 'origin/main'; then
+            echo "Release tag must point to a commit contained in origin/main."
+            exit 1
+          fi
+      - name: Check manual release branch
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ "${GITHUB_REF_NAME}" != "main" ]; then
+            echo "Manual publish must run from main. Current ref: ${GITHUB_REF_NAME}."
+            exit 1
+          fi
+      - name: Check PyPI version is new
         env:
           PACKAGE_NAME: "ChatLark"
           PACKAGE_VERSION: ${{ steps.meta.outputs.version }}
@@ -68,27 +89,21 @@ jobs:
           package = os.environ["PACKAGE_NAME"]
           version = os.environ["PACKAGE_VERSION"]
           url = f"https://pypi.org/pypi/{urllib.parse.quote(package)}/{urllib.parse.quote(version)}/json"
-          exists = "false"
           try:
               urllib.request.urlopen(url, timeout=10)
           except urllib.error.HTTPError as exc:
-              if exc.code != 404:
+              if exc.code == 404:
+                  print(f"{package} {version} is not on PyPI yet; continuing.")
+              else:
                   raise
           else:
-              exists = "true"
-
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
-              print(f"exists={exists}", file=output)
+              raise SystemExit(f"{package} {version} already exists on PyPI; bump the package version before publishing.")
           PY
-      - name: Stop when version is already on PyPI
-        if: steps.pypi.outputs.exists == 'true'
-        run: echo "ChatLark ${{ steps.meta.outputs.version }} is already on PyPI; skipping publish."
-      - name: Build distribution
-        if: steps.pypi.outputs.exists == 'false'
+      - name: Run tests
+        run: python -m pytest -q
+      - name: Build and check distribution
         run: |
-          python -m pip install --upgrade pip build twine
           python -m build
           python -m twine check dist/*
       - name: Publish to PyPI
-        if: steps.pypi.outputs.exists == 'false'
         uses: pypa/gh-action-pypi-publish@release/v1
