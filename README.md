@@ -14,7 +14,7 @@
 
 # ChatLark
 
-Placeholder package for future ChatArch Lark tooling.
+ChatArch 的 Feishu/Lark bot helper 包，承接从 ChatTool 拆出的轻量机器人、消息发送、事件服务和消息内容构造能力。更广泛的 Feishu/Lark OpenAPI 操作仍优先使用官方 `lark-cli`。
 
 ## 快速开始
 
@@ -22,26 +22,64 @@ Placeholder package for future ChatArch Lark tooling.
 pip install -e ".[dev]"
 chatlark --help
 chatlark --version
+chatlark send --help
+chatlark serve --help
 python -m pytest -q
 python -m build
 ```
 
-## CLI 规范
+## CLI
 
-这个模板默认依赖 `chatstyle>=0.1.0,<0.2.0` 和 `chatenv>=0.2.0,<0.3.0`，新的命令应优先使用：
+```bash
+chatlark info
+chatlark send USER_ID "Hello"
+chatlark send "Hello"                  # 使用 FEISHU_DEFAULT_RECEIVER_ID
+chatlark send -t chat_id "Hello team" # 使用 FEISHU_DEFAULT_CHAT_ID
+chatlark serve echo
+chatlark serve webhook
+```
 
-- `CommandSchema` / `CommandField` 描述输入。
-- `add_interactive_option()` 提供统一 `-i/-I`。
-- `resolve_command_inputs()` 统一缺参补问、默认值、TTY 与校验。
-- 默认生成 `config.py` 和 `chatenv.configs` entry point，使包可被 ChatEnv 发现；只有明确不需要 ChatEnv 接入时才使用 `--without-chatenv-provider`。
+AI 对话命令保留为可选边界，避免 ChatLark 基础包依赖 ChatTool 形成循环：
 
-## 目录结构
+```bash
+pip install "chatlark[llm]"
+chatlark chat
+chatlark serve ai --system "你是工作助手"
+```
 
-- `src/`：包源码
-- `tests/code-tests/`：代码测试和历史测试迁移
-- `tests/cli-tests/`：真实 CLI 测试，doc-first
-- `tests/mock-cli-tests/`：mock/fake CLI 测试，doc-first
+## Python API
+
+```python
+from chatlark import LarkBot, ChatSession
+
+bot = LarkBot()
+session = ChatSession(system="你是助手")
+
+@bot.on_message
+def chat(ctx):
+    ctx.reply(session.chat(ctx.sender_id, ctx.text))
+
+bot.start()
+```
+
+## 配置
+
+ChatLark 复用 ChatEnv 的 Feishu 配置字段：
+
+- `FEISHU_APP_ID`
+- `FEISHU_APP_SECRET`
+- `FEISHU_API_BASE`
+- `FEISHU_DEFAULT_RECEIVER_ID`
+- `FEISHU_DEFAULT_CHAT_ID`
+
+可通过环境变量直接提供，也可以通过 `-e/--env` 指定 ChatEnv Feishu profile 或 `.env` 文件。
+
+## 边界
+
+- ChatLark：bot helper、消息发送、事件服务、消息上下文、消息内容构造。
+- lark-cli：广泛 Feishu/Lark OpenAPI 操作和用户授权流程。
+- ChatTool：迁移完成后只应保留有意设计的兼容入口或依赖连接，不再重复持有 Lark business logic。
 
 ## 开发说明
 
-扩展脚手架前，先阅读 `DEVELOP.md` 和 `AGENTS.md`。
+扩展前先阅读 `DEVELOP.md` 和 `AGENTS.md`。发布走 PyPI Trusted Publisher/OIDC workflow，不使用本地 token 上传正式版本。
