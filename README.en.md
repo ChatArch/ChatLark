@@ -14,7 +14,7 @@
 
 # ChatLark
 
-Placeholder package for future ChatArch Lark tooling.
+ChatArch Feishu/Lark bot helpers extracted from ChatTool. ChatLark owns lightweight bot helpers, message sending, event services, and message payload builders. Broad Feishu/Lark OpenAPI operations should still use the official `lark-cli`.
 
 ## Quick Start
 
@@ -22,26 +22,64 @@ Placeholder package for future ChatArch Lark tooling.
 pip install -e ".[dev]"
 chatlark --help
 chatlark --version
+chatlark send --help
+chatlark serve --help
 python -m pytest -q
 python -m build
 ```
 
-## CLI Contract
+## CLI
 
-This template depends on `chatstyle>=0.1.0,<0.2.0` and `chatenv>=0.2.0,<0.3.0`. New commands should prefer:
+```bash
+chatlark info
+chatlark send USER_ID "Hello"
+chatlark send "Hello"                  # Uses FEISHU_DEFAULT_RECEIVER_ID
+chatlark send -t chat_id "Hello team" # Uses FEISHU_DEFAULT_CHAT_ID
+chatlark serve echo
+chatlark serve webhook
+```
 
-- `CommandSchema` / `CommandField` for inputs.
-- `add_interactive_option()` for the shared `-i/-I` switch.
-- `resolve_command_inputs()` for missing args, defaults, TTY behavior, and validation.
-- Generate `config.py` and a `chatenv.configs` entry point by default so the package is ChatEnv-discoverable; use `--without-chatenv-provider` only when ChatEnv integration is intentionally not needed.
+AI chat remains optional to avoid making the base ChatLark package depend on ChatTool:
 
-## Layout
+```bash
+pip install "chatlark[llm]"
+chatlark chat
+chatlark serve ai --system "You are a concise work assistant"
+```
 
-- `src/`: package source code
-- `tests/code-tests/`: code tests and migrated historical tests
-- `tests/cli-tests/`: real CLI tests, doc-first
-- `tests/mock-cli-tests/`: mock/fake CLI tests, doc-first
+## Python API
 
-## Development Notes
+```python
+from chatlark import LarkBot, ChatSession
 
-See `DEVELOP.md` and `AGENTS.md` before expanding the scaffold.
+bot = LarkBot()
+session = ChatSession(system="You are an assistant")
+
+@bot.on_message
+def chat(ctx):
+    ctx.reply(session.chat(ctx.sender_id, ctx.text))
+
+bot.start()
+```
+
+## Configuration
+
+ChatLark reuses ChatEnv's Feishu configuration fields:
+
+- `FEISHU_APP_ID`
+- `FEISHU_APP_SECRET`
+- `FEISHU_API_BASE`
+- `FEISHU_DEFAULT_RECEIVER_ID`
+- `FEISHU_DEFAULT_CHAT_ID`
+
+Provide them as environment variables, or pass `-e/--env` with a ChatEnv Feishu profile name or `.env` file.
+
+## Boundary
+
+- ChatLark: bot helpers, message sending, event services, message contexts, and message payload builders.
+- lark-cli: broad Feishu/Lark OpenAPI operations and user authorization flows.
+- ChatTool: after migration, should keep only deliberate compatibility entry points or dependency wiring, not duplicate Lark business logic.
+
+## Development
+
+Read `DEVELOP.md` and `AGENTS.md` before extending the package. Releases use PyPI Trusted Publisher/OIDC workflow, not local token uploads for real versions.

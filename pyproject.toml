@@ -5,11 +5,17 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ChatLark"
 dynamic = ["version"]
-description = "Placeholder package for future ChatArch Lark tooling."
+description = "ChatArch Feishu/Lark bot helpers extracted from ChatTool."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-dependencies = ["click>=8.0", "chatstyle>=0.1.0,<0.2.0", "chatenv>=0.2.0,<0.3.0"]
+dependencies = [
+    "click>=8.0",
+    "chatstyle>=0.1.0,<0.2.0",
+    "chatenv>=0.2.0,<0.3.0",
+    "lark-oapi==1.5.3",
+    "flask>=2.0",
+]
 authors = [{name = "ChatArch", email = "noreply@chatarch.org"}]
 keywords = ["chatlark", "chatarch", "cli"]
 classifiers = [
@@ -26,6 +32,7 @@ chatlark = "chatlark.cli:main"
 
 [project.optional-dependencies]
 dev = ["build", "pytest", "twine"]
+llm = ["chattool>=7.1.0,<8.0.0"]
 
 [tool.setuptools.dynamic]
 version = {attr = "chatlark.__version__"}
