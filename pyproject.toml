@@ -32,7 +32,6 @@ chatlark = "chatlark.cli:main"
 
 [project.optional-dependencies]
 dev = ["build", "pytest", "twine"]
-llm = ["chattool>=7.1.0,<8.0.0"]
 
 [tool.setuptools.dynamic]
 version = {attr = "chatlark.__version__"}

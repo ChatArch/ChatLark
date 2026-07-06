@@ -1,8 +1,8 @@
-"""Per-user LLM conversation session manager for Lark bots.
+"""Per-user conversation session manager for Lark bots.
 
-`ChatSession` intentionally keeps the LLM backend optional so ChatLark can be
-used without depending on ChatTool. Pass `chat_factory` for a custom backend, or
-install the optional `chatlark[llm]` extra to use ChatTool's `Chat` classes.
+`ChatSession` intentionally requires a caller-provided backend factory. This
+keeps ChatLark decoupled from ChatTool and other model runtimes while preserving
+the reusable per-user session container migrated from ChatTool.
 """
 
 from __future__ import annotations
@@ -18,15 +18,14 @@ class ChatSession:
     conversation history is never shared between users.
 
     Args:
-        system: System prompt shared by all users.
+        system: System prompt metadata retained for caller-created backends.
         max_history: Maximum number of dialogue turns to retain per user
             (one turn = one user message + one assistant reply). ``None`` means
             unlimited.
-        model: Model name override for the optional ChatTool backend.
-        model_type: ``"openai"`` (default) or ``"azure"`` for ChatTool backend.
+        model: Model metadata retained for caller-created backends.
+        model_type: Model backend metadata retained for caller-created backends.
         chat_factory: Callable returning a chat object with an ``ask(text)``
-            method and optional ``_chat_log`` history. Overrides ``model`` and
-            ``model_type`` when provided.
+            method and optional ``_chat_log`` history.
     """
 
     def __init__(
@@ -42,31 +41,18 @@ class ChatSession:
         self.model = model
         self.model_type = model_type
         self._sessions: Dict[str, Any] = {}
-        self._factory = chat_factory or self._default_factory
+        self._factory = chat_factory
 
     def _default_factory(self):
-        try:
-            if self.model_type == "azure":
-                from chattool.llm.chattype import AzureChat
-
-                chat = AzureChat(model=self.model) if self.model else AzureChat()
-            else:
-                from chattool import Chat
-
-                chat = Chat(model=self.model) if self.model else Chat()
-        except ImportError as exc:
-            raise RuntimeError(
-                "ChatSession needs a chat_factory or the optional ChatTool "
-                "backend. Install chatlark[llm] or pass chat_factory=."
-            ) from exc
-
-        if self.system:
-            chat.system(self.system)
-        return chat
+        raise RuntimeError(
+            "ChatSession requires chat_factory in ChatLark. "
+            "Model-backed ChatTool integration is intentionally skipped in this package."
+        )
 
     def _get_or_create(self, user_id: str):
         if user_id not in self._sessions:
-            self._sessions[user_id] = self._factory()
+            factory = self._factory or self._default_factory
+            self._sessions[user_id] = factory()
         return self._sessions[user_id]
 
     def _trim_history(self, chat) -> None:

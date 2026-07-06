@@ -39,13 +39,7 @@ chatlark serve echo
 chatlark serve webhook
 ```
 
-AI chat remains optional to avoid making the base ChatLark package depend on ChatTool:
-
-```bash
-pip install "chatlark[llm]"
-chatlark chat
-chatlark serve ai --system "You are a concise work assistant"
-```
+Model-calling commands are intentionally outside ChatLark's default command surface for now. Model-backed bot orchestration will be designed separately so ChatLark does not regain a hard dependency on ChatTool or another LLM runtime.
 
 ## Python API
 

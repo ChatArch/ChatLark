@@ -87,12 +87,6 @@ def _resolve_text_target(
     return receiver, text
 
 
-def _create_chat_session(*, system: str = "", max_history: int | None = None):
-    from chatlark.session import ChatSession
-
-    return ChatSession(system=system, max_history=max_history)
-
-
 @main.command()
 @click.option(
     "--env",
@@ -176,59 +170,6 @@ def send(receiver, text, env_ref, id_type):
     click.secho(f"发送失败: code={resp.code}  msg={resp.msg}", fg="red")
     if resp.code == 99991663:
         click.echo("  -> 提示: 用户不在应用可见范围内")
-
-
-@main.command()
-@click.option(
-    "--env",
-    "-e",
-    "env_ref",
-    default=None,
-    help="从指定 .env 文件或已保存 profile 读取配置",
-)
-@click.option(
-    "--system", "-s", default="你是一个工作助手，回答简洁专业。", help="System Prompt"
-)
-@click.option(
-    "--max-history", "-n", default=10, type=int, help="最多保留的对话轮数 (默认 10)"
-)
-@click.option(
-    "--user",
-    "-u",
-    default="cli_user",
-    help="虚拟 user_id，用于会话隔离 (默认 cli_user)",
-)
-def chat(env_ref, system, max_history, user):
-    """Start an optional ChatTool-backed AI chat session in the terminal."""
-    _load_runtime_env(env_ref)
-
-    session = _create_chat_session(system=system, max_history=max_history)
-    click.secho(f"AI 对话  (system: {system[:40]}...)", fg="green")
-    click.echo("输入 /clear 清除历史，/quit 退出\n")
-
-    while True:
-        try:
-            text = click.prompt("你", prompt_suffix="> ")
-        except (EOFError, KeyboardInterrupt):
-            click.echo("\n再见！")
-            break
-
-        text = text.strip()
-        if not text:
-            continue
-        if text in ("/quit", "/exit", "/q"):
-            click.echo("再见！")
-            break
-        if text == "/clear":
-            session.clear(user)
-            click.secho("对话历史已清除", fg="yellow")
-            continue
-
-        try:
-            reply = session.chat(user, text)
-            click.secho(f"AI> {reply}", fg="cyan")
-        except Exception as exc:
-            click.secho(f"错误: {exc}", fg="red")
 
 
 from chatlark.serve import serve  # noqa: E402
