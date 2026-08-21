@@ -2,7 +2,9 @@
 
 ## CLI Rules
 
-- Use `chatstyle>=0.1.0,<0.2.0` and `chatenv>=0.2.0,<0.3.0` as the canonical CLI interaction runtime.
+- Use `chatstyle>=0.2.0,<0.3.0` and `chatenv>=0.2.10,<0.3.0` as the canonical CLI runtime.
+- Keep the public Click root explicitly named `chatlark`; use ChatStyle `add_tree_option()` for `--tree` and `--tree-brief` instead of a package-local renderer.
+- Reuse ChatEnv's built-in `FeishuConfig` typed schema and `EnvStore(get_paths().envs_dir)` for active and named profiles.
 - Prefer `CommandSchema`, `CommandField`, `add_interactive_option()`, and `resolve_command_inputs()` for new commands.
 - Missing required args should auto-enter interactive mode when recoverable.
 - `-i` forces interactive mode; `-I` disables prompting and must fail fast.
@@ -16,12 +18,14 @@
 - Put real CLI coverage under `tests/cli-tests/`.
 - Put mock/fake CLI coverage under `tests/mock-cli-tests/`.
 - Keep `README.md`, `docs/`, and `CHANGELOG.md` in sync with user-facing changes.
+- Keep the documented CLI tree synchronized with the actual Click registry; full output includes signatures and brief output omits them.
 
 ## Automation
 
 - Keep automation small and reviewable.
 - Prefer commands that can run in CI without interactive prompts.
 - Ensure generated defaults are safe for local development.
+- Run `chatlark --version`, `chatlark --tree`, and `chatlark --tree-brief` against the installed console script in CI.
 
 ## Release Workflow
 

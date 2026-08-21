@@ -1,7 +1,9 @@
 import importlib.metadata
 
+from chatenv import BaseEnvConfig, EnvStore
+
 from chatlark.bot import LarkBot
-from chatlark.config import FeishuConfig, get_env_root
+from chatlark.config import FeishuConfig, get_env_root, get_env_store
 
 
 EXPECTED_LARKBOT_METHODS = {
@@ -89,6 +91,27 @@ def test_base_package_has_no_chattool_dependency():
     assert not any(req.lower().startswith("chattool") for req in requirements)
 
 
+def test_shared_runtime_dependency_bounds_match_creation_standard():
+    requirements = [
+        requirement.lower().replace(" ", "")
+        for requirement in importlib.metadata.requires("ChatLark") or []
+    ]
+    chatstyle = next(
+        requirement for requirement in requirements if requirement.startswith("chatstyle")
+    )
+    chatenv = next(
+        requirement for requirement in requirements if requirement.startswith("chatenv")
+    )
+
+    assert ">=0.2.0" in chatstyle
+    assert "<0.3.0" in chatstyle
+    assert ">=0.2.10" in chatenv
+    assert "<0.3.0" in chatenv
+
+
 def test_chatenv_feishu_config_is_reused():
     assert FeishuConfig.FEISHU_APP_SECRET.is_sensitive is True
+    assert BaseEnvConfig.get_config_by_alias("feishu") is FeishuConfig
     assert get_env_root().name == "envs"
+    assert isinstance(get_env_store(), EnvStore)
+    assert get_env_store().envs_dir == get_env_root()

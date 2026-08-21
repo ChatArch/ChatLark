@@ -101,6 +101,11 @@ jobs:
           PY
       - name: Run tests
         run: python -m pytest -q
+      - name: Smoke installed CLI contract
+        run: |
+          chatlark --version
+          chatlark --tree
+          chatlark --tree-brief
       - name: Build and check distribution
         run: |
           python -m build

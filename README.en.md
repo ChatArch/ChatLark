@@ -22,6 +22,8 @@ ChatArch Feishu/Lark bot helpers extracted from ChatTool. ChatLark owns lightwei
 pip install -e ".[dev]"
 chatlark --help
 chatlark --version
+chatlark --tree
+chatlark --tree-brief
 chatlark send --help
 chatlark serve --help
 python -m pytest -q
@@ -40,6 +42,32 @@ chatlark serve webhook
 ```
 
 Model-calling commands are intentionally outside ChatLark's default command surface for now. Model-backed bot orchestration will be designed separately so ChatLark does not regain a hard dependency on ChatTool or another LLM runtime.
+
+## CLI tree
+
+`chatlark --tree` is rendered by ChatStyle from the real Click registry and keeps parameter signatures:
+
+```text
+chatlark
+├── --help  # Show this message and exit.
+├── --version  # Show the version and exit.
+├── --tree  # Print the registered CLI tree and exit.
+├── --tree-brief  # Print the registered CLI tree without parameter signatures and exit.
+├── info [--env ENV-REF]  # Read bot metadata and validate credentials without printing secrets.
+├── send [RECEIVER] [TEXT] [--env ENV-REF] [--type ID-TYPE]  # Send one remote text message and print its message ID, never credentials.
+└── serve  # Run long-lived Lark bot network services.
+    ├── echo [--mode MODE] [--host HOST] [--port PORT] [--log-level LOG-LEVEL]  # Run an echo bot that receives and replies to remote messages.
+    └── webhook [--host HOST] [--port PORT] [--path PATH] [--log-level LOG-LEVEL] [--encrypt-key ENCRYPT-KEY] [--verification-token VERIFICATION-TOKEN]  # Run a webhook verifier without printing token values.
+```
+
+`chatlark --tree-brief` keeps the same nodes and descriptions while omitting parameter signatures.
+
+| Leaf | Main inputs | Output | Side effects and boundary |
+|---|---|---|---|
+| `chatlark info` | optional Feishu profile or `.env` | bot name, Open ID, status | read-only remote request; never prints credentials |
+| `chatlark send` | receiver, text, ID type, optional config | `message_id` or error code | sends one remote message; never prints credentials |
+| `chatlark serve echo` | mode, host, port, log level | long-running logs | receives and replies to messages; never prints credentials |
+| `chatlark serve webhook` | listener and webhook parameters | long-running logs | starts a listener; never prints token values |
 
 ## Python API
 
@@ -66,7 +94,7 @@ ChatLark reuses ChatEnv's Feishu configuration fields:
 - `FEISHU_DEFAULT_RECEIVER_ID`
 - `FEISHU_DEFAULT_CHAT_ID`
 
-Provide them as environment variables, or pass `-e/--env` with a ChatEnv Feishu profile name or `.env` file.
+By default ChatLark reads the active ChatEnv Feishu profile (`$CHATARCH_HOME/envs/Feishu/.env`) and falls back to process environment variables. `info` and `send` also accept `-e/--env` with a named ChatEnv Feishu profile or an explicit `.env` file; named profiles are resolved through ChatEnv `EnvStore` without global activation.
 
 ## Boundary
 

@@ -7,15 +7,18 @@ import sys
 from pathlib import Path
 
 import click
+from chatstyle import add_tree_option
 
 from chatlark import __version__
-from chatlark.config import BaseEnvConfig, FeishuConfig, get_env_root
+from chatlark.config import FeishuConfig, get_env_root, get_env_store
 
 
-@click.group()
+@click.group(name="chatlark")
 @click.version_option(__version__, prog_name="chatlark")
+@add_tree_option(renderer_options={"root_name": "chatlark"})
 def main() -> None:
     """Opinionated ChatArch helpers for Feishu/Lark bots."""
+    _load_runtime_env(None)
 
 
 def _resolve_env_path(env_ref: str) -> Path:
@@ -23,7 +26,7 @@ def _resolve_env_path(env_ref: str) -> Path:
     if candidate.is_file():
         return candidate
 
-    profile_path = FeishuConfig.get_profile_env_file(get_env_root(), env_ref)
+    profile_path = get_env_store().profile_path(FeishuConfig, env_ref)
     if profile_path.exists():
         return profile_path
 
@@ -33,15 +36,23 @@ def _resolve_env_path(env_ref: str) -> Path:
 
 
 def _load_runtime_env(env_ref: str | None) -> Path | None:
-    if not env_ref:
-        return None
+    store = get_env_store()
+    if env_ref:
+        env_path = _resolve_env_path(env_ref)
+        values = store.load_path(env_path)
+        values = {
+            field.env_key: values.get(
+                field.env_key,
+                field.default if field.default is not None else "",
+            )
+            for field in FeishuConfig.get_fields().values()
+        }
+    else:
+        env_path = store.active_path(FeishuConfig)
+        values = store.load_active(FeishuConfig)
 
-    env_path = _resolve_env_path(env_ref)
-    BaseEnvConfig.load_all_with_override(
-        get_env_root(),
-        override_env_file=env_path,
-    )
-    return env_path
+    FeishuConfig.load_from_sources(env_values=values)
+    return env_path if env_path.is_file() else None
 
 
 def _get_bot():
@@ -96,7 +107,7 @@ def _resolve_text_target(
     help="从指定 .env 文件或已保存 profile 读取配置",
 )
 def info(env_ref):
-    """Show bot profile info and validate credentials."""
+    """Read bot metadata and validate credentials without printing secrets."""
     _load_runtime_env(env_ref)
     bot = _get_bot()
     resp = bot.get_bot_info()
@@ -132,7 +143,7 @@ def info(env_ref):
     help="接收者 ID 类型 (默认 user_id)",
 )
 def send(receiver, text, env_ref, id_type):
-    """Send a text message.
+    """Send one remote text message and print its message ID, never credentials.
 
     示例:
       chatlark send "你好"

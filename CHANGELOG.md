@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.2 - 2026-08-21
+
+### Changed
+
+- Migrated the public Click command tree to ChatStyle `add_tree_option()` with an explicit `chatlark` root, including registered `--tree` and `--tree-brief` output.
+- Raised the shared runtime bounds to `chatstyle>=0.2.0,<0.3.0` and `chatenv>=0.2.10,<0.3.0`.
+- Routed active, named, and explicit Feishu configuration files through ChatEnv's typed `FeishuConfig` and canonical `EnvStore`.
+- Added tree/profile contract tests, installed console-script CI and publish smokes, and bilingual CLI tree documentation.
+
 ## 2026-07-06
 
 ### Added
