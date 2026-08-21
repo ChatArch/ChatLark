@@ -22,7 +22,7 @@ def _get_bot():
 
 @click.group()
 def serve():
-    """Run Lark bot services."""
+    """Run long-lived Lark bot network services."""
 
 
 @serve.command()
@@ -37,7 +37,7 @@ def serve():
 @click.option("--port", "-p", default=7777, type=int, help="Flask 监听端口 (仅 flask 模式)")
 @click.option("--log-level", "-l", default="INFO", type=LOG_LEVELS, help="日志级别 (默认 INFO)")
 def echo(mode, host, port, log_level):
-    """Start an echo bot that replies with the received text."""
+    """Run an echo bot that receives and replies to remote messages."""
     bot = _get_bot()
 
     @bot.on_message
@@ -56,7 +56,7 @@ def echo(mode, host, port, log_level):
 @click.option("--encrypt-key", default="", help="事件加密 Key")
 @click.option("--verification-token", default="", help="验证 Token")
 def webhook(host, port, path, log_level, encrypt_key, verification_token):
-    """Start an empty webhook server for platform URL verification."""
+    """Run a webhook verifier without printing token values."""
     bot = _get_bot()
     click.secho(f"Webhook 服务启动  http://{host}:{port}{path}  log_level={log_level}", fg="green")
     bot.start(
